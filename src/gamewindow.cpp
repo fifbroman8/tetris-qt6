@@ -6,104 +6,130 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QFont>
+#include <QDebug>
 
 GameWindow::GameWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle("Tetris - Qt6");
-    setStyleSheet("background-color: #1e1e1e; color: white;");
-
-    // Central widget
+    setGeometry(100, 100, 900, 600);
+    
+    // Create main central widget
     QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+    
     QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
-
-    // Game area - create with proper size
-    QWidget *gameAreaContainer = new QWidget(this);
-    gameAreaContainer->setMinimumSize(
-        GameBoard::BOARD_WIDTH * CELL_SIZE + 2 * BOARD_MARGIN + 2,
-        GameBoard::BOARD_HEIGHT * CELL_SIZE + 2 * BOARD_MARGIN + 2
-    );
-    gameAreaContainer->setStyleSheet("background-color: #0a0a0a;");
-    mainLayout->addWidget(gameAreaContainer);
-
-    // Info panel
-    QWidget *infoPanel = new QWidget(this);
-    QVBoxLayout *infoPanelLayout = new QVBoxLayout(infoPanel);
-    infoPanelLayout->setAlignment(Qt::AlignTop);
-    infoPanelLayout->setContentsMargins(10, 10, 10, 10);
-    infoPanelLayout->setSpacing(10);
-
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+    
+    // LEFT SIDE: Game Board Area
+    QWidget *gameAreaWidget = new QWidget();
+    gameAreaWidget->setStyleSheet("background-color: #0a0a0a;");
+    gameAreaWidget->setMinimumWidth(300);
+    gameAreaWidget->setMinimumHeight(550);
+    mainLayout->addWidget(gameAreaWidget, 3);
+    
+    // RIGHT SIDE: Info Panel
+    QWidget *infoPanelWidget = new QWidget();
+    infoPanelWidget->setStyleSheet("background-color: #252526; border-left: 1px solid #3e3e42;");
+    infoPanelWidget->setMinimumWidth(250);
+    QVBoxLayout *infoPanelLayout = new QVBoxLayout(infoPanelWidget);
+    infoPanelLayout->setContentsMargins(15, 15, 15, 15);
+    infoPanelLayout->setSpacing(8);
+    
     // Title
-    QLabel *titleLabel = new QLabel("TETRIS", this);
-    QFont titleFont = titleLabel->font();
-    titleFont.setPointSize(20);
-    titleFont.setBold(true);
+    QLabel *titleLabel = new QLabel("TETRIS");
+    QFont titleFont("Arial", 22, QFont::Bold);
     titleLabel->setFont(titleFont);
     titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setStyleSheet("color: #ffffff; padding: 10px 0px;");
     infoPanelLayout->addWidget(titleLabel);
-
-    // Score
-    statusLabel = new QLabel(this);
-    statusLabel->setStyleSheet("font-size: 13px; margin-top: 10px; line-height: 1.8;");
+    
+    // Score Display
+    statusLabel = new QLabel();
+    statusLabel->setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.8; padding: 10px 0px;");
     statusLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     infoPanelLayout->addWidget(statusLabel);
-
-    // Next piece preview
-    QLabel *nextLabel = new QLabel("Next Piece:", this);
-    nextLabel->setStyleSheet("font-size: 12px; margin-top: 10px; font-weight: bold;");
+    
+    // Next Piece Label
+    QLabel *nextLabel = new QLabel("Next Piece:");
+    nextLabel->setStyleSheet("color: #ffffff; font-size: 12px; font-weight: bold; padding: 10px 0px;");
     infoPanelLayout->addWidget(nextLabel);
-
-    // Controls info
+    
+    // Controls Label
     QLabel *controlsLabel = new QLabel(
         "<b>Controls:</b><br>"
         "← → : Move<br>"
         "↑ : Rotate<br>"
         "↓ : Drop<br>"
         "Space: Fast Drop<br>"
-        "P: Pause",
-        this
+        "P: Pause"
     );
-    controlsLabel->setStyleSheet("font-size: 11px; margin-top: 10px; line-height: 1.6;");
+    controlsLabel->setStyleSheet("color: #ffffff; font-size: 11px; line-height: 1.6; padding: 10px 0px;");
     infoPanelLayout->addWidget(controlsLabel);
-
-    // Buttons
-    newGameButton = new QPushButton("New Game", this);
-    newGameButton->setMinimumHeight(40);
+    
+    // Add stretch
+    infoPanelLayout->addStretch(1);
+    
+    // NEW GAME BUTTON
+    newGameButton = new QPushButton("New Game");
+    newGameButton->setMinimumHeight(45);
     newGameButton->setStyleSheet(
-        "QPushButton { background-color: #0078d4; color: white; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 13px; }"
-        "QPushButton:hover { background-color: #1084d7; }"
-        "QPushButton:pressed { background-color: #005a9e; }"
+        "QPushButton {"
+        "  background-color: #0078d4;"
+        "  color: white;"
+        "  border: none;"
+        "  border-radius: 4px;"
+        "  font-weight: bold;"
+        "  font-size: 14px;"
+        "  padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #1084d7;"
+        "}"
+        "QPushButton:pressed {"
+        "  background-color: #005a9e;"
+        "}"
     );
-    connect(newGameButton, &QPushButton::clicked, this, &GameWindow::onNewGameClicked);
     infoPanelLayout->addWidget(newGameButton);
-
-    pauseButton = new QPushButton("Pause", this);
-    pauseButton->setMinimumHeight(40);
+    
+    // PAUSE BUTTON
+    pauseButton = new QPushButton("Pause");
+    pauseButton->setMinimumHeight(45);
     pauseButton->setStyleSheet(
-        "QPushButton { background-color: #107c10; color: white; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 13px; }"
-        "QPushButton:hover { background-color: #117a11; }"
-        "QPushButton:pressed { background-color: #0b5a0b; }"
+        "QPushButton {"
+        "  background-color: #107c10;"
+        "  color: white;"
+        "  border: none;"
+        "  border-radius: 4px;"
+        "  font-weight: bold;"
+        "  font-size: 14px;"
+        "  padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #117a11;"
+        "}"
+        "QPushButton:pressed {"
+        "  background-color: #0b5a0b;"
+        "}"
     );
-    connect(pauseButton, &QPushButton::clicked, this, &GameWindow::onPauseClicked);
     infoPanelLayout->addWidget(pauseButton);
-
-    infoPanelLayout->addStretch();
-    infoPanel->setMaximumWidth(210);
-    infoPanel->setStyleSheet("background-color: #252526; border-left: 1px solid #3e3e42; padding: 0px;");
-    mainLayout->addWidget(infoPanel);
-
-    setCentralWidget(centralWidget);
-
-    // Set focus for keyboard input
+    
+    mainLayout->addWidget(infoPanelWidget, 1);
+    
+    // Connect buttons
+    connect(newGameButton, &QPushButton::clicked, this, &GameWindow::onNewGameClicked);
+    connect(pauseButton, &QPushButton::clicked, this, &GameWindow::onPauseClicked);
+    
+    // Set focus
     setFocus();
     setFocusPolicy(Qt::StrongFocus);
-
-    // Game loop timer
+    
+    // Start game loop
     connect(&gameTimer, &QTimer::timeout, this, &GameWindow::gameLoop);
     gameTimer.start(50); // 20 FPS
-
+    
     updateStatusBar();
-    resize(850, 550);
 }
 
 GameWindow::~GameWindow()
@@ -145,18 +171,17 @@ void GameWindow::keyPressEvent(QKeyEvent *event)
 void GameWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
-
+    
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-
-    // Draw game board
+    
     drawGame(painter);
 }
 
 void GameWindow::drawGame(QPainter &painter)
 {
-    int startX = BOARD_MARGIN + 10;
-    int startY = BOARD_MARGIN + 10;
+    int startX = 15;
+    int startY = 15;
 
     // Draw border
     painter.setPen(QPen(Qt::white, 2));
@@ -188,11 +213,11 @@ void GameWindow::drawGame(QPainter &painter)
 
     // Draw "Game Over" if needed
     if (gameBoard.isGameOver()) {
-        painter.setPen(QPen(Qt::red, 2));
-        painter.setFont(QFont("Arial", 24, QFont::Bold));
+        painter.setPen(QPen(Qt::red, 3));
+        painter.setFont(QFont("Arial", 28, QFont::Bold));
         painter.drawText(
             startX,
-            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 20,
+            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 30,
             GameBoard::BOARD_WIDTH * CELL_SIZE,
             100,
             Qt::AlignCenter,
@@ -202,11 +227,11 @@ void GameWindow::drawGame(QPainter &painter)
 
     // Draw "Paused" if paused
     if (gameBoard.isPaused()) {
-        painter.setPen(QPen(Qt::yellow, 2));
-        painter.setFont(QFont("Arial", 20, QFont::Bold));
+        painter.setPen(QPen(Qt::yellow, 3));
+        painter.setFont(QFont("Arial", 24, QFont::Bold));
         painter.drawText(
             startX,
-            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 15,
+            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 25,
             GameBoard::BOARD_WIDTH * CELL_SIZE,
             100,
             Qt::AlignCenter,
@@ -225,9 +250,9 @@ void GameWindow::gameLoop()
 void GameWindow::updateStatusBar()
 {
     QString status = QString(
-        "<b>Score:</b> %1<br>"
+        "<span style='color: #ffffff;'><b>Score:</b> %1<br>"
         "<b>Level:</b> %2<br>"
-        "<b>Lines:</b> %3"
+        "<b>Lines:</b> %3</span>"
     ).arg(gameBoard.getScore())
      .arg(gameBoard.getLevel())
      .arg(gameBoard.getLines());
@@ -237,6 +262,7 @@ void GameWindow::updateStatusBar()
 
 void GameWindow::onNewGameClicked()
 {
+    qDebug() << "New Game Button Clicked!";
     gameBoard.newGame();
     pauseButton->setText("Pause");
     updateStatusBar();
@@ -245,6 +271,7 @@ void GameWindow::onNewGameClicked()
 
 void GameWindow::onPauseClicked()
 {
+    qDebug() << "Pause Button Clicked!";
     gameBoard.togglePause();
     pauseButton->setText(gameBoard.isPaused() ? "Resume" : "Pause");
     update();
