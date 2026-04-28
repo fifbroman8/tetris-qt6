@@ -13,6 +13,7 @@ GameWindow::GameWindow(QWidget *parent)
 {
     setWindowTitle("Tetris - Qt6");
     setGeometry(100, 100, 900, 600);
+    setStyleSheet("background-color: #1e1e1e;");
     
     // Create main central widget
     QWidget *centralWidget = new QWidget(this);
@@ -22,16 +23,16 @@ GameWindow::GameWindow(QWidget *parent)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     
-    // LEFT SIDE: Game Board Area
+    // LEFT SIDE: Game Board Drawing Area
     QWidget *gameAreaWidget = new QWidget();
     gameAreaWidget->setStyleSheet("background-color: #0a0a0a;");
-    gameAreaWidget->setMinimumWidth(300);
+    gameAreaWidget->setMinimumWidth(350);
     gameAreaWidget->setMinimumHeight(550);
     mainLayout->addWidget(gameAreaWidget, 3);
     
     // RIGHT SIDE: Info Panel
     QWidget *infoPanelWidget = new QWidget();
-    infoPanelWidget->setStyleSheet("background-color: #252526; border-left: 1px solid #3e3e42;");
+    infoPanelWidget->setStyleSheet("background-color: #252526;");
     infoPanelWidget->setMinimumWidth(250);
     QVBoxLayout *infoPanelLayout = new QVBoxLayout(infoPanelWidget);
     infoPanelLayout->setContentsMargins(15, 15, 15, 15);
@@ -47,7 +48,7 @@ GameWindow::GameWindow(QWidget *parent)
     
     // Score Display
     statusLabel = new QLabel();
-    statusLabel->setStyleSheet("color: #ffffff; font-size: 13px; line-height: 1.8; padding: 10px 0px;");
+    statusLabel->setStyleSheet("color: #00ff00; font-size: 13px; font-family: monospace; padding: 10px 0px;");
     statusLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     infoPanelLayout->addWidget(statusLabel);
     
@@ -65,7 +66,7 @@ GameWindow::GameWindow(QWidget *parent)
         "Space: Fast Drop<br>"
         "P: Pause"
     );
-    controlsLabel->setStyleSheet("color: #ffffff; font-size: 11px; line-height: 1.6; padding: 10px 0px;");
+    controlsLabel->setStyleSheet("color: #cccccc; font-size: 11px; line-height: 1.6; padding: 10px 0px;");
     infoPanelLayout->addWidget(controlsLabel);
     
     // Add stretch
@@ -117,9 +118,16 @@ GameWindow::GameWindow(QWidget *parent)
     
     mainLayout->addWidget(infoPanelWidget, 1);
     
-    // Connect buttons
-    connect(newGameButton, &QPushButton::clicked, this, &GameWindow::onNewGameClicked);
-    connect(pauseButton, &QPushButton::clicked, this, &GameWindow::onPauseClicked);
+    // Connect buttons with debug output
+    connect(newGameButton, &QPushButton::clicked, this, [this]() {
+        qDebug() << "New Game Button Clicked!";
+        onNewGameClicked();
+    });
+    
+    connect(pauseButton, &QPushButton::clicked, this, [this]() {
+        qDebug() << "Pause Button Clicked!";
+        onPauseClicked();
+    });
     
     // Set focus
     setFocus();
@@ -175,16 +183,19 @@ void GameWindow::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     
+    // Draw only on the left side (game area)
     drawGame(painter);
 }
 
 void GameWindow::drawGame(QPainter &painter)
 {
+    // Calculate drawing position (left side of window)
     int startX = 15;
     int startY = 15;
 
-    // Draw border
+    // Draw game board border
     painter.setPen(QPen(Qt::white, 2));
+    painter.setBrush(Qt::black);
     painter.drawRect(
         startX - 1,
         startY - 1,
@@ -192,7 +203,7 @@ void GameWindow::drawGame(QPainter &painter)
         GameBoard::BOARD_HEIGHT * CELL_SIZE + 2
     );
 
-    // Draw cells
+    // Draw all cells
     for (int row = 0; row < GameBoard::BOARD_HEIGHT; ++row) {
         for (int col = 0; col < GameBoard::BOARD_WIDTH; ++col) {
             int x = startX + col * CELL_SIZE;
@@ -201,18 +212,29 @@ void GameWindow::drawGame(QPainter &painter)
             int color = gameBoard.getCellColor(row, col);
 
             if (color != 0) {
+                // Filled cell
                 painter.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2, QColor(color));
                 painter.setPen(QPen(Qt::darkGray, 1));
                 painter.drawRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
             } else {
+                // Empty cell
                 painter.setPen(QPen(Qt::darkGray, 1));
                 painter.drawRect(x, y, CELL_SIZE, CELL_SIZE);
             }
         }
     }
 
-    // Draw "Game Over" if needed
+    // Draw "Game Over" overlay
     if (gameBoard.isGameOver()) {
+        painter.setBrush(QColor(0, 0, 0, 150));
+        painter.setPen(Qt::NoPen);
+        painter.drawRect(
+            startX,
+            startY,
+            GameBoard::BOARD_WIDTH * CELL_SIZE,
+            GameBoard::BOARD_HEIGHT * CELL_SIZE
+        );
+        
         painter.setPen(QPen(Qt::red, 3));
         painter.setFont(QFont("Arial", 28, QFont::Bold));
         painter.drawText(
@@ -225,8 +247,17 @@ void GameWindow::drawGame(QPainter &painter)
         );
     }
 
-    // Draw "Paused" if paused
-    if (gameBoard.isPaused()) {
+    // Draw "Paused" overlay
+    if (gameBoard.isPaused() && !gameBoard.isGameOver()) {
+        painter.setBrush(QColor(0, 0, 0, 150));
+        painter.setPen(Qt::NoPen);
+        painter.drawRect(
+            startX,
+            startY,
+            GameBoard::BOARD_WIDTH * CELL_SIZE,
+            GameBoard::BOARD_HEIGHT * CELL_SIZE
+        );
+        
         painter.setPen(QPen(Qt::yellow, 3));
         painter.setFont(QFont("Arial", 24, QFont::Bold));
         painter.drawText(
@@ -244,15 +275,15 @@ void GameWindow::gameLoop()
 {
     gameBoard.update();
     updateStatusBar();
-    update();
+    update(); // Trigger repaint
 }
 
 void GameWindow::updateStatusBar()
 {
     QString status = QString(
-        "<span style='color: #ffffff;'><b>Score:</b> %1<br>"
-        "<b>Level:</b> %2<br>"
-        "<b>Lines:</b> %3</span>"
+        "Score: %1<br>"
+        "Level: %2<br>"
+        "Lines: %3"
     ).arg(gameBoard.getScore())
      .arg(gameBoard.getLevel())
      .arg(gameBoard.getLines());
@@ -262,7 +293,6 @@ void GameWindow::updateStatusBar()
 
 void GameWindow::onNewGameClicked()
 {
-    qDebug() << "New Game Button Clicked!";
     gameBoard.newGame();
     pauseButton->setText("Pause");
     updateStatusBar();
@@ -271,7 +301,6 @@ void GameWindow::onNewGameClicked()
 
 void GameWindow::onPauseClicked()
 {
-    qDebug() << "Pause Button Clicked!";
     gameBoard.togglePause();
     pauseButton->setText(gameBoard.isPaused() ? "Resume" : "Pause");
     update();
