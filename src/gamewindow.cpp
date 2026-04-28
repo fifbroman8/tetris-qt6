@@ -17,18 +17,21 @@ GameWindow::GameWindow(QWidget *parent)
     QWidget *centralWidget = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
 
-    // Game area
-    QWidget *gameArea = new QWidget(this);
-    gameArea->setMinimumSize(
-        GameBoard::BOARD_WIDTH * CELL_SIZE + 2 * BOARD_MARGIN,
-        GameBoard::BOARD_HEIGHT * CELL_SIZE + 2 * BOARD_MARGIN
+    // Game area - create with proper size
+    QWidget *gameAreaContainer = new QWidget(this);
+    gameAreaContainer->setMinimumSize(
+        GameBoard::BOARD_WIDTH * CELL_SIZE + 2 * BOARD_MARGIN + 2,
+        GameBoard::BOARD_HEIGHT * CELL_SIZE + 2 * BOARD_MARGIN + 2
     );
-    mainLayout->addWidget(gameArea);
+    gameAreaContainer->setStyleSheet("background-color: #0a0a0a;");
+    mainLayout->addWidget(gameAreaContainer);
 
     // Info panel
     QWidget *infoPanel = new QWidget(this);
     QVBoxLayout *infoPanelLayout = new QVBoxLayout(infoPanel);
     infoPanelLayout->setAlignment(Qt::AlignTop);
+    infoPanelLayout->setContentsMargins(10, 10, 10, 10);
+    infoPanelLayout->setSpacing(10);
 
     // Title
     QLabel *titleLabel = new QLabel("TETRIS", this);
@@ -41,12 +44,13 @@ GameWindow::GameWindow(QWidget *parent)
 
     // Score
     statusLabel = new QLabel(this);
-    statusLabel->setStyleSheet("font-size: 14px; margin-top: 20px;");
+    statusLabel->setStyleSheet("font-size: 13px; margin-top: 10px; line-height: 1.8;");
+    statusLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     infoPanelLayout->addWidget(statusLabel);
 
     // Next piece preview
-    QLabel *nextLabel = new QLabel("Next:", this);
-    nextLabel->setStyleSheet("font-size: 12px; margin-top: 20px; font-weight: bold;");
+    QLabel *nextLabel = new QLabel("Next Piece:", this);
+    nextLabel->setStyleSheet("font-size: 12px; margin-top: 10px; font-weight: bold;");
     infoPanelLayout->addWidget(nextLabel);
 
     // Controls info
@@ -59,41 +63,47 @@ GameWindow::GameWindow(QWidget *parent)
         "P: Pause",
         this
     );
-    controlsLabel->setStyleSheet("font-size: 11px; margin-top: 20px;");
+    controlsLabel->setStyleSheet("font-size: 11px; margin-top: 10px; line-height: 1.6;");
     infoPanelLayout->addWidget(controlsLabel);
 
     // Buttons
     newGameButton = new QPushButton("New Game", this);
+    newGameButton->setMinimumHeight(40);
     newGameButton->setStyleSheet(
-        "QPushButton { background-color: #0078d4; color: white; padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton { background-color: #0078d4; color: white; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 13px; }"
         "QPushButton:hover { background-color: #1084d7; }"
+        "QPushButton:pressed { background-color: #005a9e; }"
     );
     connect(newGameButton, &QPushButton::clicked, this, &GameWindow::onNewGameClicked);
     infoPanelLayout->addWidget(newGameButton);
 
     pauseButton = new QPushButton("Pause", this);
+    pauseButton->setMinimumHeight(40);
     pauseButton->setStyleSheet(
-        "QPushButton { background-color: #107c10; color: white; padding: 8px; border-radius: 4px; font-weight: bold; }"
+        "QPushButton { background-color: #107c10; color: white; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 13px; }"
         "QPushButton:hover { background-color: #117a11; }"
+        "QPushButton:pressed { background-color: #0b5a0b; }"
     );
     connect(pauseButton, &QPushButton::clicked, this, &GameWindow::onPauseClicked);
     infoPanelLayout->addWidget(pauseButton);
 
     infoPanelLayout->addStretch();
-    infoPanel->setMaximumWidth(200);
+    infoPanel->setMaximumWidth(210);
+    infoPanel->setStyleSheet("background-color: #252526; border-left: 1px solid #3e3e42; padding: 0px;");
     mainLayout->addWidget(infoPanel);
 
     setCentralWidget(centralWidget);
 
-    // Set central widget for painting
-    gameArea->setFocusPolicy(Qt::StrongFocus);
+    // Set focus for keyboard input
     setFocus();
+    setFocusPolicy(Qt::StrongFocus);
 
     // Game loop timer
     connect(&gameTimer, &QTimer::timeout, this, &GameWindow::gameLoop);
     gameTimer.start(50); // 20 FPS
 
     updateStatusBar();
+    resize(850, 550);
 }
 
 GameWindow::~GameWindow()
@@ -145,8 +155,8 @@ void GameWindow::paintEvent(QPaintEvent *event)
 
 void GameWindow::drawGame(QPainter &painter)
 {
-    int startX = BOARD_MARGIN;
-    int startY = BOARD_MARGIN;
+    int startX = BOARD_MARGIN + 10;
+    int startY = BOARD_MARGIN + 10;
 
     // Draw border
     painter.setPen(QPen(Qt::white, 2));
@@ -182,7 +192,7 @@ void GameWindow::drawGame(QPainter &painter)
         painter.setFont(QFont("Arial", 24, QFont::Bold));
         painter.drawText(
             startX,
-            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2,
+            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 20,
             GameBoard::BOARD_WIDTH * CELL_SIZE,
             100,
             Qt::AlignCenter,
@@ -196,7 +206,7 @@ void GameWindow::drawGame(QPainter &painter)
         painter.setFont(QFont("Arial", 20, QFont::Bold));
         painter.drawText(
             startX,
-            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2,
+            startY + GameBoard::BOARD_HEIGHT * CELL_SIZE / 2 - 15,
             GameBoard::BOARD_WIDTH * CELL_SIZE,
             100,
             Qt::AlignCenter,
